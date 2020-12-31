@@ -159,6 +159,7 @@ struct wm_netevent_params {
 static void conf_cache_data(void);
 static int cursor_type;
 static int vtmode;
+static char title_error[256] = "null";
 
 static struct sesslist sesslist;       /* for saved-session menu */
 
@@ -445,7 +446,7 @@ static void close_session(void *ignored_context)
     int i;
 
     session_closed = true;
-    newtitle = dupprintf("%s (inactive)", appname);
+    newtitle = dupprintf("%s (inactive: %s)", appname, title_error);
     win_set_icon_title(wintw, newtitle);
     win_set_title(wintw, newtitle);
     sfree(newtitle);
@@ -1185,7 +1186,11 @@ static void win_seat_connection_fatal(Seat *seat, const char *msg)
 {
     char *title = dupprintf("%s Fatal Error", appname);
     show_mouseptr(true);
-    MessageBox(wgs.term_hwnd, msg, title, MB_ICONERROR | MB_OK);
+    strncpy(title_error, msg, sizeof(title_error) - 1);
+    const char *silent_error = winsock_error_string(WSAECONNABORTED);
+    if (strncmp(silent_error, msg, strlen(silent_error)) != 0) {
+       MessageBox(wgs.term_hwnd, msg, title, MB_ICONERROR | MB_OK);
+    }
     sfree(title);
 
     if (conf_get_int(conf, CONF_close_on_exit) == FORCE_ON)
