@@ -1,5 +1,6 @@
 /*
  * Terminal emulator.
+ * vim: ts=4 sw=4 et :
  */
 
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <assert.h>
 #include "putty.h"
 #include "terminal.h"
+#include "terminal_highlight.h"
 
 #define VT52_PLUS
 
@@ -1749,6 +1751,9 @@ Terminal *term_init(Conf *myconf, struct unicode_data *ucsdata, TermWin *win)
     term->trusted = true;
 
     term->bracketed_paste_active = false;
+
+    /* Initialize highlighting for terminal */
+    hl_init(hl_pats);
 
     return term;
 }
@@ -5378,6 +5383,105 @@ static void do_paint_draw(Terminal *term, termline *ldata, int x, int y,
 }
 
 /*
+ * Prepare regexps
+ */
+static void hl_init(char *hl_pats[]) {
+    /* Count number of patterns */
+    char **current = hl_pats;
+    hl_pats_num = 0;
+    while (*current++) {
+        hl_pats_num++;
+    }
+
+    /* Allocate memory for patterns */
+    hl_re = (pcre**)malloc((hl_pats_num + 1) * sizeof(pcre *));
+    assert(hl_re != NULL);
+    hl_rec = (pcre_extra**)malloc((hl_pats_num + 1) * sizeof(pcre *));
+    assert(hl_rec != NULL);
+
+    hl_re[hl_pats_num] = (pcre*)NULL;
+    hl_rec[hl_pats_num] = (pcre_extra*)NULL;
+
+    /* Compile and store the patterns */
+    current = hl_pats;
+    hl_pats_num = 0;
+    const char *errptr;
+    int errnum;
+    while (current[hl_pats_num]) {
+        hl_re[hl_pats_num] = pcre_compile(current[hl_pats_num], PCRE_CASELESS,
+                &errptr, &errnum, NULL);
+        assert(hl_re[hl_pats_num] != NULL);
+        hl_rec[hl_pats_num] = pcre_study(hl_re[hl_pats_num], 0, &errptr);
+        assert(errptr == NULL);
+
+        hl_pats_num++;
+    }
+}
+
+/*
+ * Process a line during output
+ */
+static void hl_process_line(Terminal *term, termline *line) {
+    int j;
+
+    char current_line[HL_MAX_LINE];
+    assert(term->cols < HL_MAX_LINE);
+
+    /* Extract characters to a buffer */
+    for (j = 0; j < term->cols; j++) {
+        current_line[j] = line->chars[j].chr & 0x000000FFUL;
+    }
+    current_line[j] = 0;
+
+    /* TODO implement cleanup for changed lines */
+
+    int pos;
+    char *string;
+    int ovec[3];
+    int length = j - 1;
+
+    int re_curr = 0;
+    while (re_curr < hl_pats_num) {
+        pos = 0;
+        string = current_line;
+        while (pcre_exec(hl_re[re_curr], hl_rec[re_curr],
+                    (string + pos), (length - pos), 0, 0, ovec, 3) >= 0) {
+            pos += ovec[0];
+            while (ovec[0]++ < ovec[1]) {
+                #define HL_RUN(xg, ch)                  \
+                do {                                    \
+                    if (hl_opts[re_curr].xg##_##ch)     \
+                    line->chars[pos].truecolour.xg.ch = \
+                    hl_opts[re_curr].xg##_##ch;         \
+                } while(0)
+
+                if (hl_opts[re_curr].bg) {
+                    line->chars[pos].truecolour.bg.enabled = true;
+                    HL_RUN(bg, r);
+                    HL_RUN(bg, g);
+                    HL_RUN(bg, b);
+                }
+                if (hl_opts[re_curr].fg) {
+                    line->chars[pos].truecolour.fg.enabled = true;
+                    HL_RUN(fg, r);
+                    HL_RUN(fg, g);
+                    HL_RUN(fg, b);
+                }
+
+                #undef HL_RUN
+
+                pos++;
+            }
+            if (pos-- >= length) {
+                break;
+            }
+        }
+
+        re_curr++;
+    }
+}
+
+/*
  * Given a context, update the window.
  */
 static void do_paint(Terminal *term)
@@ -5388,6 +5492,19 @@ static void do_paint(Terminal *term)
     wchar_t *ch;
     size_t chlen;
     termchar *newline;
+
+    /*
+     * korg: inspired by urlhack of KiTTY, keywords highlighting implementation
+     */
+    for (i = 0; i < term->rows; i++) {
+        /* Skip current line when typing */
+        if (term->cursor_on && term->curs.y == i) {
+            continue;
+        }
+        termline *lp = scrlineptr(i);
+        hl_process_line(term, lp);
+        unlineptr(lp);
+    }
 
     chlen = 1024;
     ch = snewn(chlen, wchar_t);

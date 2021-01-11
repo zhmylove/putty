@@ -636,7 +636,7 @@ if (defined $makefiles{'cygwin'}) {
       " -DWIN32S_COMPAT -D_NO_OLDNAMES -D__USE_MINGW_ANSI_STDIO=1 " .
                (join " ", map {"-I$dirpfx$_"} @srcdirs)) .
                "\n".
-    "LDFLAGS = -s\n".
+    "LDFLAGS = -s -L../\n".
     &splitline("RCFLAGS = \$(RCINC) --define WIN32=1 --define _WIN32=1 ".
       "--define WINVER=0x0400 ".(join " ", map {"-I$dirpfx$_"} @srcdirs))."\n".
     "\n".
