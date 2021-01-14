@@ -155,3 +155,6 @@
 /windows/*.msi
 /windows/*.wixobj
 /windows/*.wixpdb
+/pcre/*.a
+/pcre/*.exe
+/pcre/pcre_chartables.c
