@@ -24,7 +24,7 @@ static int hl_pats_num;
 /* Storage for RE patterns of interest */
 static char *hl_pats[] = {
    /* lime */
-   "\\b(establish|started|done|true|yes|ok|healthy?|accept|allow|enable?|"
+   "\\b(establish|started|done|true|active|yes|ok|healthy?|accept|allow|enable?|"
       "connect|success(full?y?)?|succeed)(ed)?\\b",
 
    /* pink */
