@@ -2852,6 +2852,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
           SelectObject(hdc, oldpen);
           DeleteObject(edge);
         }
+
+        /* Draw outline */
+        {
+          HBRUSH oldbrush;
+          HPEN oldpen;
+          oldbrush = SelectObject(hdc, GetStockObject(DC_BRUSH));
+          oldpen = SelectObject(hdc, GetStockObject(NULL_PEN));
+          SetDCBrushColor(hdc, RGB(38, 39, 41));
+          Rectangle(hdc, 0, 0,
+                  offset_width * 2 + font_width * term->cols,
+                  offset_height * 2 + font_height * term->rows);
+          SelectObject(hdc, oldbrush);
+          SelectObject(hdc, oldpen);
+        }
+
         SelectObject(hdc, GetStockObject(SYSTEM_FONT));
         SelectObject(hdc, GetStockObject(WHITE_PEN));
         EndPaint(hwnd, &p);
