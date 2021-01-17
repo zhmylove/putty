@@ -158,3 +158,5 @@
 /pcre/*.a
 /pcre/*.exe
 /pcre/pcre_chartables.c
+cscope.files
+cscope.out
