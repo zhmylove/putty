@@ -2598,6 +2598,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
                     CheckMenuItem(popup_menus[i].menu, IDM_OUTLINE,
                             outline_contrast ? MF_CHECKED : MF_UNCHECKED);
             }
+            InvalidateRect(wgs.term_hwnd, NULL, true);
             break;
           default:
             if (wParam >= IDM_SAVED_MIN && wParam < IDM_SAVED_MAX) {
