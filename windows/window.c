@@ -55,6 +55,7 @@
 #define IDM_COPY      0x0190
 #define IDM_PASTE     0x01A0
 #define IDM_SPECIALSEP 0x0200
+#define IDM_HIGHLIGHT  0x0210
 
 #define IDM_SPECIAL_MIN 0x0400
 #define IDM_SPECIAL_MAX 0x0800
@@ -868,6 +869,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
             AppendMenu(m, (conf_get_int(conf, CONF_resize_action)
                            == RESIZE_DISABLED) ? MF_GRAYED : MF_ENABLED,
                        IDM_FULLSCREEN, "&Full Screen");
+            AppendMenu(m,
+                    MF_ENABLED | (
+                        hl_enabled ? MF_CHECKED : MF_UNCHECKED
+                        ),
+                    IDM_HIGHLIGHT, "&Keywords highlighting");
             AppendMenu(m, MF_SEPARATOR, 0, 0);
             if (has_help())
                 AppendMenu(m, MF_ENABLED, IDM_HELP, "&Help");
@@ -2561,6 +2567,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
             break;
           case IDM_FULLSCREEN:
             flip_full_screen();
+            break;
+          case IDM_HIGHLIGHT:
+            hl_enabled = ! hl_enabled;
+            /* Untick the menu item in the System and context menus. */
+            {
+                int i;
+                for (i = 0; i < lenof(popup_menus); i++)
+                    CheckMenuItem(popup_menus[i].menu, IDM_HIGHLIGHT,
+                            hl_enabled ? MF_CHECKED : MF_UNCHECKED);
+            }
             break;
           default:
             if (wParam >= IDM_SAVED_MIN && wParam < IDM_SAVED_MAX) {
