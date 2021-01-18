@@ -56,6 +56,7 @@
 #define IDM_PASTE     0x01A0
 #define IDM_SPECIALSEP 0x0200
 #define IDM_HIGHLIGHT  0x0210
+#define IDM_OUTLINE   0x0220
 
 #define IDM_SPECIAL_MIN 0x0400
 #define IDM_SPECIAL_MAX 0x0800
@@ -160,7 +161,12 @@ struct wm_netevent_params {
 static void conf_cache_data(void);
 static int cursor_type;
 static int vtmode;
+
+/* Static buffer for error message inside window title */
 static char title_error[256] = "null";
+
+/* Global outline state for outline */
+bool outline_contrast = true;
 
 static struct sesslist sesslist;       /* for saved-session menu */
 
@@ -874,6 +880,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
                         hl_enabled ? MF_CHECKED : MF_UNCHECKED
                         ),
                     IDM_HIGHLIGHT, "&Keywords highlighting");
+            AppendMenu(m,
+                    MF_ENABLED | (
+                        outline_contrast ? MF_CHECKED : MF_UNCHECKED
+                        ),
+                    IDM_OUTLINE, "Contrast outline");
             AppendMenu(m, MF_SEPARATOR, 0, 0);
             if (has_help())
                 AppendMenu(m, MF_ENABLED, IDM_HELP, "&Help");
@@ -2578,6 +2589,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
                             hl_enabled ? MF_CHECKED : MF_UNCHECKED);
             }
             break;
+          case IDM_OUTLINE:
+            outline_contrast = ! outline_contrast;
+            /* Untick the menu item in the System and context menus. */
+            {
+                int i;
+                for (i = 0; i < lenof(popup_menus); i++)
+                    CheckMenuItem(popup_menus[i].menu, IDM_OUTLINE,
+                            outline_contrast ? MF_CHECKED : MF_UNCHECKED);
+            }
+            break;
           default:
             if (wParam >= IDM_SAVED_MIN && wParam < IDM_SAVED_MAX) {
                 SendMessage(hwnd, WM_SYSCOMMAND, IDM_SAVEDSESS, wParam);
@@ -2875,10 +2896,14 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
           HPEN oldpen;
           oldbrush = SelectObject(hdc, GetStockObject(DC_BRUSH));
           oldpen = SelectObject(hdc, GetStockObject(NULL_PEN));
-          SetDCBrushColor(hdc, RGB(38, 39, 41));
+          if (outline_contrast) {
+             SetDCBrushColor(hdc, RGB(200, 200, 200));
+          } else {
+             SetDCBrushColor(hdc, RGB(38, 39, 41));
+          }
           Rectangle(hdc, 0, 0,
-                  offset_width * 2 + font_width * term->cols,
-                  offset_height * 2 + font_height * term->rows);
+                  offset_width * 2 + font_width * term->cols + 1,
+                  offset_height * 2 + font_height * term->rows + 1);
           SelectObject(hdc, oldbrush);
           SelectObject(hdc, oldpen);
         }
