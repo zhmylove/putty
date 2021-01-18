@@ -5386,6 +5386,9 @@ static void do_paint_draw(Terminal *term, termline *ldata, int x, int y,
  * Prepare regexps
  */
 static void hl_init(char *hl_pats[]) {
+    /* Initialize variables */
+    hl_enabled = true;
+
     /* Count number of patterns */
     char **current = hl_pats;
     hl_pats_num = 0;
@@ -5496,14 +5499,16 @@ static void do_paint(Terminal *term)
     /*
      * korg: inspired by urlhack of KiTTY, keywords highlighting implementation
      */
-    for (i = 0; i < term->rows; i++) {
-        /* Skip current line when typing */
-        if (term->cursor_on && term->curs.y == i) {
-            continue;
+    if (hl_enabled) {
+        for (i = 0; i < term->rows; i++) {
+            /* Skip current line when typing */
+            if (term->cursor_on && term->curs.y == i) {
+                continue;
+            }
+            termline *lp = scrlineptr(i);
+            hl_process_line(term, lp);
+            unlineptr(lp);
         }
-        termline *lp = scrlineptr(i);
-        hl_process_line(term, lp);
-        unlineptr(lp);
     }
 
     chlen = 1024;

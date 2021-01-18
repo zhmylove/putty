@@ -26,6 +26,9 @@ typedef struct {
 typedef struct termchar termchar;
 typedef struct termline termline;
 
+/* Global highlight state for terminal_highlight */
+bool hl_enabled;
+
 struct termchar {
     /*
      * Any code in terminal.c which definitely needs to be changed
