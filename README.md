@@ -22,7 +22,17 @@ I'll try to keep all my changes in a separate branch named "korg" which will hel
 # New features I have implemented so far
 
 1. Removed annoying MessageBox invocation in case of "Software caused connection abort" error.  This makes all inactive PuTTY windows to be closed just with regular WM\_CLOSE event.
-2. Changed plain "(Inactive)" window caption to more meaningful variant: "(Inactive: reason)".
+2. Changed plain "(inactive)" window caption to more meaningful variant: "(inactive: time: reason)".
 3. Implemented keyword based highlighting using PCRE(!) regular expressions.  Although, the patterns are currently hard-coded...  I don't have too much time to implement the configuration part here.
 4. Implemented border highlighting by default.  Windows 10 with it's useless thin borders makes a reall hell with overlapping PuTTY windows, so I've added an explicit border.
 5. Implemented checkboxes for "Keywords highlight" and "Contrast border" features in PuTTY menu to support their toggle on the fly.
+
+# Build
+
+Build process is described inside README file.
+As I do have Strawberry Perl with MinGW built-in, I prefer to:
+
+```
+cd windows
+gmake -f Makefile.mgw
+```
