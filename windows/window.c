@@ -164,6 +164,7 @@ static int vtmode;
 
 /* Static buffer for error message inside window title */
 static char title_error[256] = "null";
+static char title_time[16] = "null";
 
 /* Global outline state for outline */
 bool outline_contrast = true;
@@ -447,13 +448,26 @@ static void start_backend(void)
     sfree(title_to_free);
 }
 
+static char* get_curr_ts()
+{
+    time_t t;
+    t = time(NULL);
+    if (t < 0) {
+        return "hh:mm";
+    }
+    if (strftime((char*)title_time, sizeof(title_time) - 1, "%H:%M", localtime(&t)) == 0) {
+        return "hh:mm";
+    }
+    return ((char*)title_time);
+}
+
 static void close_session(void *ignored_context)
 {
     char *newtitle;
     int i;
 
     session_closed = true;
-    newtitle = dupprintf("%s (inactive: %s)", appname, title_error);
+    newtitle = dupprintf("%s (inactive: %s: %s)", appname, get_curr_ts(), title_error);
     win_set_icon_title(wintw, newtitle);
     win_set_title(wintw, newtitle);
     sfree(newtitle);
