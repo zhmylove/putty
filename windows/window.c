@@ -165,6 +165,7 @@ static int vtmode;
 /* Static buffer for error message inside window title */
 static char title_error[256] = "null";
 static char title_time[16] = "null";
+static time_t title_time_ts = -1;
 
 /* Global outline state for outline */
 bool outline_contrast = true;
@@ -450,12 +451,10 @@ static void start_backend(void)
 
 static char* get_curr_ts()
 {
-    time_t t;
-    t = time(NULL);
-    if (t < 0) {
+    if (title_time_ts < 0) {
         return "hh:mm";
     }
-    if (strftime((char*)title_time, sizeof(title_time) - 1, "%H:%M", localtime(&t)) == 0) {
+    if (strftime((char*)title_time, sizeof(title_time) - 1, "%H:%M", localtime(&title_time_ts)) == 0) {
         return "hh:mm";
     }
     return ((char*)title_time);
@@ -1217,6 +1216,7 @@ static void win_seat_connection_fatal(Seat *seat, const char *msg)
 {
     char *title = dupprintf("%s Fatal Error", appname);
     show_mouseptr(true);
+    title_time_ts = time(NULL);
     strncpy(title_error, msg, sizeof(title_error) - 1);
     const char *silent_error = winsock_error_string(WSAECONNABORTED);
     if (strncmp(silent_error, msg, strlen(silent_error)) != 0) {
@@ -2154,6 +2154,7 @@ static void win_seat_notify_remote_exit(Seat *seat)
             (close_on_exit == AUTO && exitcode != INT_MAX)) {
             PostQuitMessage(0);
         } else {
+            title_time_ts = time(NULL);
             queue_toplevel_callback(close_session, NULL);
             session_closed = true;
             /* exitcode == INT_MAX indicates that the connection was closed
